@@ -1,0 +1,34 @@
+# go-suggest-neo — single service with a persistent data volume.
+#
+#   docker compose up -d --build      # build + start
+#   docker compose logs -f            # follow logs
+#   docker compose down               # stop (the 'neo-data' volume PERSISTS)
+#   docker compose down -v            # stop AND delete the data volume
+#
+# Configuration is read from the environment / a local .env file (see the
+# variables below). The corpus + all state live in the named volume
+# 'neo-data', mounted at /data, so they survive restarts and image upgrades.
+
+services:
+  neo-server:
+    build: .
+    image: go-suggest-neo:latest
+    container_name: go-suggest-neo
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8001}:8001"
+    environment:
+      API_PORT: "8001"
+      DATA_DIR: /data
+      # Admin token for write endpoints (/upload, /reload, /backup, /restore,
+      # /blacklist). Leave empty to keep them open.
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-}"
+      ADMIN_ALLOWED_IPS: "${ADMIN_ALLOWED_IPS:-}"
+      # Basic-Auth login for the /docs (Swagger) page.
+      SWAGGER_USER: "${SWAGGER_USER:-}"
+      SWAGGER_PASSWORD: "${SWAGGER_PASSWORD:-}"
+    volumes:
+      - neo-data:/data
+
+volumes:
+  neo-data:
