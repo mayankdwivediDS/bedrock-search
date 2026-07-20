@@ -20,6 +20,22 @@ scratch.
 - **Docker** for repeatable local and cloud deployment.
 - **Go test** for unit and integration coverage.
 
+## Operations console
+
+Open `http://localhost:8001/console` to manage the service from one UI. It
+supports isolated projects, project creation and deletion, CSV file-set import
+history, corpus reloads, live hot/cold cache metrics, and a prefix-level view
+of the hot cache and cold promotion candidates. Set `ADMIN_TOKEN` before
+exposing the console beyond a trusted local network.
+
+Each project has its own `data/<project>/` directory, so its corpus versions,
+cache, blacklist, usage snapshots, and source-file history are isolated.
+Projects are restored automatically when the service restarts.
+
+This release is a single-node console. It deliberately does not claim to
+operate remote cluster nodes; the project isolation and management API are the
+foundation for that later addition.
+
 ## Build status
 
 This repository is being built for OpenAI Build Week. The delivery plan,

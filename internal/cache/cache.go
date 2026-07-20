@@ -13,6 +13,7 @@ package cache
 
 import (
 	"container/list"
+	"sort"
 	"sync"
 	"time"
 
@@ -23,7 +24,7 @@ import (
 type Entry struct {
 	Prefix   string
 	Trie     *trie.Trie
-	Size     int       // number of words this trie holds
+	Size     int // number of words this trie holds
 	LoadedAt time.Time
 	hits     uint64
 	lruElt   *list.Element
@@ -202,5 +203,41 @@ func (c *Cache) Prefixes() []string {
 	for e := c.lru.Front(); e != nil; e = e.Next() {
 		out = append(out, e.Value.(*Entry).Prefix)
 	}
+	return out
+}
+
+// EntrySnapshot is the safe, UI-ready view of one resident hot-cache entry.
+// It intentionally does not expose the mutable trie itself.
+type EntrySnapshot struct {
+	Prefix   string    `json:"prefix"`
+	Words    int       `json:"words"`
+	Hits     uint64    `json:"hits"`
+	LoadedAt time.Time `json:"loaded_at"`
+	Rank     int       `json:"rank"` // 1 = most recently used
+}
+
+// Entries returns resident entries ordered MRU to LRU. It is designed for
+// operational views, where a prefix-level tree is more useful than dumping
+// every word stored inside each trie.
+func (c *Cache) Entries() []EntrySnapshot {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	out := make([]EntrySnapshot, 0, c.lru.Len())
+	rank := 1
+	for e := c.lru.Front(); e != nil; e = e.Next() {
+		entry := e.Value.(*Entry)
+		out = append(out, EntrySnapshot{
+			Prefix: entry.Prefix, Words: entry.Size, Hits: entry.hits,
+			LoadedAt: entry.LoadedAt, Rank: rank,
+		})
+		rank++
+	}
+	return out
+}
+
+// SortedPrefixes is a small convenience for callers rendering a hierarchy.
+func (c *Cache) SortedPrefixes() []string {
+	out := c.Prefixes()
+	sort.Strings(out)
 	return out
 }
