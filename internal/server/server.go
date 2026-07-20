@@ -27,6 +27,16 @@ import (
 //	GET  /backup    write  (admin if ADMIN_TOKEN set)
 //	POST /restore   write  (admin if ADMIN_TOKEN set)
 func New(inst *Instance) *fiber.App {
+	// Keep the original constructor available for integrations that host one
+	// instance themselves. The server binary uses NewWithProjectManager.
+	mgr := &ProjectManager{cfg: inst.cfg, projects: map[string]*Instance{"default": inst}}
+	return NewWithProjectManager(mgr)
+}
+
+// NewWithProjectManager builds the API and management console around isolated
+// projects. The existing unscoped API continues to operate on "default".
+func NewWithProjectManager(projects *ProjectManager) *fiber.App {
+	inst := projects.Default()
 	cfg := inst.cfg
 	app := fiber.New(fiber.Config{
 		// Allow large CSV / backup uploads.
@@ -83,6 +93,9 @@ func New(inst *Instance) *fiber.App {
 	app.Post("/restore", admin, restoreHandler(inst))
 	app.Get("/blacklist", admin, listBlacklistHandler(inst))
 	app.Post("/blacklist", admin, blacklistHandler(inst))
+
+	registerProjectAPI(app, projects, admin)
+	registerConsole(app)
 
 	// Interactive API docs (Swagger UI) at /docs, spec at /openapi.yaml.
 	registerDocs(app, cfg)

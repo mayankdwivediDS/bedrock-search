@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bedrock Search Console</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div><strong>Bedrock Search</strong><span>Operations console</span></div>
+    <label>Admin token <input id="token" type="password" autocomplete="off" placeholder="X-API-Key"></label>
+    <button id="refresh" class="secondary">Refresh</button>
+  </header>
+  <main>
+    <aside>
+      <div class="section-title"><h2>Projects</h2><button id="new-project">+ New</button></div>
+      <div id="projects" class="projects"></div>
+      <p class="hint">Each project is isolated: corpus, cache, versions, blacklist, and source history live separately.</p>
+    </aside>
+    <section class="content">
+      <div id="message" role="status"></div>
+      <div class="title-row"><div><p class="eyebrow">LOCAL NODE</p><h1 id="project-name">Select a project</h1></div><button id="delete-project" class="danger">Delete project</button></div>
+      <div id="cards" class="cards"></div>
+      <div class="grid">
+        <article>
+          <h2>CSV file sets</h2>
+          <form id="upload-form">
+            <input id="csv-file" name="file" type="file" accept=".csv,text/csv" required>
+            <input id="csv-column" name="column" placeholder="CSV column name" required>
+            <select id="csv-mode" name="mode"><option value="merge">Merge into corpus</option><option value="replace">Replace corpus</option></select>
+            <button>Import file</button>
+          </form>
+          <button id="reload" class="secondary">Reload project</button>
+          <div id="sources" class="list"></div>
+        </article>
+        <article>
+          <h2>Hot bucket tree</h2>
+          <p class="hint">Promoted prefix tries currently held in RAM, ordered by recent use.</p>
+          <div id="hot" class="list"></div>
+        </article>
+        <article>
+          <h2>Cold bucket candidates</h2>
+          <p class="hint">Active prefixes not yet promoted to the hot cache.</p>
+          <div id="cold" class="list"></div>
+        </article>
+        <article>
+          <h2>Node</h2>
+          <div class="node"><b>local</b><span class="online">● online</span><span>Single-process node</span></div>
+          <p class="hint">Projects are ready for multi-node orchestration later. This release does not claim to control remote cluster nodes.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

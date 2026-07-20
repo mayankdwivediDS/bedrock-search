@@ -36,7 +36,7 @@ func main() {
 	}
 	configureLogger(cfg)
 
-	inst, err := server.NewInstance(cfg, "default")
+	projects, err := server.NewProjectManager(cfg)
 	if err != nil {
 		slog.Error("startup failed", "err", err)
 		os.Exit(1)
@@ -45,7 +45,8 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	app := server.New(inst)
+	inst := projects.Default()
+	app := server.NewWithProjectManager(projects)
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	slog.Info("listening", "addr", addr)
 
