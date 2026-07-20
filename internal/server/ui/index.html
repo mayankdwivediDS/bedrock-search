@@ -7,51 +7,67 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <div><strong>Bedrock Search</strong><span>Operations console</span></div>
-    <label>Admin token <input id="token" type="password" autocomplete="off" placeholder="X-API-Key"></label>
-    <button id="refresh" class="secondary">Refresh</button>
+  <header class="topbar">
+    <a class="brand" href="/console/" aria-label="Bedrock Search Console"><span class="brand-mark">B</span><span><strong>Bedrock Search</strong><small>Operations console</small></span></a>
+    <span class="node-status"><i></i> Local node online</span>
+    <div class="top-actions">
+      <label class="token-field" title="Used only in this browser tab for protected admin API requests">Admin token <input id="token" type="password" autocomplete="off" placeholder="X-API-Key"></label>
+      <button id="api-docs" class="secondary tip" data-tip="Open API reference">API docs</button>
+      <button id="refresh" class="secondary tip" data-tip="Refresh project metrics">Refresh</button>
+    </div>
   </header>
   <main>
     <aside>
-      <div class="section-title"><h2>Projects</h2><button id="new-project">+ New</button></div>
-      <div id="projects" class="projects"></div>
-      <p class="hint">Each project is isolated: corpus, cache, versions, blacklist, and source history live separately.</p>
+      <div class="section-title"><div><p class="eyebrow">WORKSPACES</p><h2>Projects</h2></div><button id="new-project" class="icon-button tip" data-tip="Create an isolated search project" aria-label="Create project">+</button></div>
+      <div id="projects" class="projects" aria-label="Projects"></div>
+      <div class="isolation-note"><b>Isolated by design</b><span>Every project owns its corpus, cache, versions, blacklist, and source history.</span></div>
     </aside>
     <section class="content">
-      <div id="message" role="status"></div>
-      <div class="title-row"><div><p class="eyebrow">LOCAL NODE</p><h1 id="project-name">Select a project</h1></div><button id="delete-project" class="danger">Delete project</button></div>
-      <div id="cards" class="cards"></div>
+      <div id="message" role="status" aria-live="polite"></div>
+      <div class="title-row"><div><p class="eyebrow">LOCAL NODE <span class="dot">•</span> ACTIVE PROJECT</p><h1 id="project-name">Select a project</h1><p id="project-subtitle" class="hint">Choose a project to inspect its search system.</p></div><button id="delete-project" class="danger tip" data-tip="Permanently removes this non-default project's data">Delete project</button></div>
+      <div id="cards" class="cards" aria-label="Project metrics"></div>
+      <nav class="section-nav" aria-label="Console sections"><a href="#sources">Data sources</a><a href="#hot">Hot cache</a><a href="#cold">Cold candidates</a><a href="#node">Node</a></nav>
       <div class="grid">
-        <article>
-          <h2>CSV file sets</h2>
+        <article class="source-card" id="sources-card">
+          <div class="card-heading"><div><p class="eyebrow">INGESTION</p><h2>CSV file sets</h2></div><span class="badge">Versioned</span></div>
           <form id="upload-form">
-            <input id="csv-file" name="file" type="file" accept=".csv,text/csv" required>
+            <label class="file-drop tip" data-tip="Upload a CSV to this project only"><input id="csv-file" name="file" type="file" accept=".csv,text/csv" required><span>Choose CSV file</span><small id="file-name">No file selected</small></label>
             <input id="csv-column" name="column" placeholder="CSV column name" required>
-            <select id="csv-mode" name="mode"><option value="merge">Merge into corpus</option><option value="replace">Replace corpus</option></select>
-            <button>Import file</button>
+            <select id="csv-mode" name="mode" title="Merge adds data; replace creates a new corpus from this file"><option value="merge">Merge into corpus</option><option value="replace">Replace corpus</option></select>
+            <button class="tip" data-tip="Import the selected CSV file">Import file</button>
           </form>
-          <button id="reload" class="secondary">Reload project</button>
-          <div id="sources" class="list"></div>
+          <button id="reload" class="secondary tip" data-tip="Rebuild the live engine from the current corpus version">Reload project</button>
+          <div id="sources" class="list" aria-label="Imported file sets"></div>
         </article>
         <article>
-          <h2>Hot bucket tree</h2>
-          <p class="hint">Promoted prefix tries currently held in RAM, ordered by recent use.</p>
-          <div id="hot" class="list"></div>
+          <div class="card-heading"><div><p class="eyebrow">IN MEMORY</p><h2>Hot bucket tree</h2></div><span class="badge hot">Promoted</span></div>
+          <p class="hint">Prefix tries held in RAM, ordered by most recent use. Hover a row to see its LRU rank.</p>
+          <div id="hot" class="list" aria-label="Hot cache prefixes"></div>
         </article>
         <article>
-          <h2>Cold bucket candidates</h2>
-          <p class="hint">Active prefixes not yet promoted to the hot cache.</p>
-          <div id="cold" class="list"></div>
+          <div class="card-heading"><div><p class="eyebrow">ON DISK</p><h2>Cold bucket candidates</h2></div><span class="badge cold">Watching</span></div>
+          <p class="hint">Active prefixes that have not reached hot-cache promotion yet.</p>
+          <div id="cold" class="list" aria-label="Cold promotion candidates"></div>
         </article>
-        <article>
-          <h2>Node</h2>
-          <div class="node"><b>local</b><span class="online">● online</span><span>Single-process node</span></div>
-          <p class="hint">Projects are ready for multi-node orchestration later. This release does not claim to control remote cluster nodes.</p>
+        <article id="node">
+          <div class="card-heading"><div><p class="eyebrow">DEPLOYMENT</p><h2>Node</h2></div><span class="badge online">Online</span></div>
+          <div class="node"><div class="node-icon">N</div><div><b>local</b><span>Single-process node</span></div></div>
+          <p class="hint">This release manages isolated projects on one node. The project API is the basis for future remote-node orchestration.</p>
         </article>
       </div>
     </section>
   </main>
+  <section id="docs-panel" class="docs-panel" aria-hidden="true" aria-label="API documentation">
+    <div class="docs-sheet">
+      <div class="docs-header"><div><p class="eyebrow">BEDROCK SEARCH API</p><h2>Console API reference</h2><p class="hint">Use <code>X-API-Key</code> when <code>ADMIN_TOKEN</code> is configured. The console uses these same endpoints.</p></div><button id="close-docs" class="icon-button" aria-label="Close API documentation">×</button></div>
+      <div class="docs-links"><a href="/docs" target="_blank" rel="noreferrer">Open Swagger UI ↗</a><a href="/openapi.yaml" target="_blank" rel="noreferrer">Open OpenAPI YAML ↗</a></div>
+      <div class="api-grid">
+        <div class="api-group"><h3>Search</h3><div class="api-row"><b class="get">GET</b><code>/health</code><span>Service, corpus size, and version.</span></div><div class="api-row"><b class="get">GET</b><code>/suggest?query=app</code><span>Prefix suggestions with hot/cold source.</span></div><div class="api-row"><b class="get">GET</b><code>/metrics/json</code><span>Latency and cache metrics.</span></div></div>
+        <div class="api-group"><h3>Projects</h3><div class="api-row"><b class="get">GET</b><code>/api/projects</code><span>List local projects.</span></div><div class="api-row"><b class="post">POST</b><code>/api/projects</code><span>Create with <code>{"name":"catalog"}</code>.</span></div><div class="api-row"><b class="get">GET</b><code>/api/projects/:name/overview</code><span>Corpus, cache, source history, and prefixes.</span></div><div class="api-row"><b class="delete">DELETE</b><code>/api/projects/:name</code><span>Delete a non-default project.</span></div></div>
+        <div class="api-group"><h3>Data management</h3><div class="api-row"><b class="post">POST</b><code>/api/projects/:name/upload</code><span>CSV multipart: file, column, mode.</span></div><div class="api-row"><b class="post">POST</b><code>/api/projects/:name/reload</code><span>Reload current corpus version.</span></div><div class="api-row"><b class="post">POST</b><code>/upload</code><span>Backward-compatible default-project CSV upload.</span></div></div>
+      </div>
+    </div>
+  </section>
   <script src="app.js"></script>
 </body>
 </html>
