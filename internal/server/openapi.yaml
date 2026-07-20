@@ -1,0 +1,403 @@
+openapi: 3.0.3
+info:
+  title: go-suggest-neo API
+  version: "1.0"
+  description: >
+    A fast autocomplete service. There are six endpoints: two public reads
+    (`/health`, `/suggest`) and four data-management writes (`/upload`,
+    `/reload`, `/backup`, `/restore`).
+
+
+    **Trying write endpoints from this page:** if the server was started with
+    an `ADMIN_TOKEN`, click **Authorize** (top right) and paste the token
+    into `ApiKeyAuth`. If no token is set, writes are open and you can skip
+    that step.
+
+servers:
+  - url: /
+    description: This server
+
+tags:
+  - name: Read
+    description: Public. No token required.
+  - name: Write
+    description: Data management. Requires the admin token only if ADMIN_TOKEN is set.
+
+paths:
+  /health:
+    get:
+      tags: [Read]
+      summary: Liveness + corpus size + live version
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  engine: { type: string, example: go-suggest-neo }
+                  corpus_words: { type: integer, example: 7 }
+                  version: { type: string, example: v2 }
+
+  /metrics:
+    get:
+      tags: [Read]
+      summary: Prometheus metrics (per-route)
+      description: >
+        Route-based metrics in Prometheus text exposition format (v0.0.4),
+        ready to scrape. Counters for requests/errors/responses-by-status and
+        a latency summary (quantiles 0.5/0.95/0.99 + sum + count + max) per
+        route, plus corpus gauges: `gosuggest_corpus_words` (total on disk),
+        `gosuggest_hot_words` (in RAM), `gosuggest_cold_words` (disk-only),
+        `gosuggest_hot_entries`, `gosuggest_hot_word_cap`,
+        `gosuggest_cache_hit_rate`. **No** runtime/GC/process metrics.
+        Unmatched paths are grouped under route `<not found>`. The same data in
+        JSON is at `/metrics/json`.
+      responses:
+        "200":
+          description: Prometheus exposition text
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  # TYPE gosuggest_http_requests_total counter
+                  gosuggest_http_requests_total{method="GET",route="/suggest"} 1500
+                  # TYPE gosuggest_http_request_duration_ms summary
+                  gosuggest_http_request_duration_ms{method="GET",route="/suggest",quantile="0.99"} 3.4
+
+  /metrics/json:
+    get:
+      tags: [Read]
+      summary: Per-route request counts + latency (JSON)
+      description: >
+        The same route-based metrics as `/metrics`, but as JSON — convenient
+        for ad-hoc checks and the preflight script.
+      responses:
+        "200":
+          description: Metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uptime_seconds: { type: integer, example: 3600 }
+                  corpus:
+                    type: object
+                    description: Live corpus + hot-cache sizes.
+                    properties:
+                      corpus_words: { type: integer, example: 5128060, description: "Total words on disk." }
+                      hot_words: { type: integer, example: 18919, description: "Words in the RAM hot cache." }
+                      cold_words: { type: integer, example: 5109141, description: "Words only on disk (corpus - hot)." }
+                      hot_entries: { type: integer, example: 12, description: "Promoted prefixes in the hot cache." }
+                      hot_word_cap: { type: integer, example: 100000 }
+                      hit_rate: { type: number, example: 0.974 }
+                      lookups_hit: { type: integer, example: 48800 }
+                      lookups_miss: { type: integer, example: 1200 }
+                      evicted: { type: integer, example: 0 }
+                  routes:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        requests: { type: integer, example: 1500 }
+                        errors: { type: integer, example: 2 }
+                        avg_ms: { type: number, example: 0.42 }
+                        p50_ms: { type: number, example: 0.30 }
+                        p95_ms: { type: number, example: 1.10 }
+                        p99_ms: { type: number, example: 3.40 }
+                        min_ms: { type: number, example: 0.05 }
+                        max_ms: { type: number, example: 12.7 }
+                        status:
+                          type: object
+                          additionalProperties: { type: integer }
+                          example: { "200": 1498, "400": 2 }
+
+  /suggest:
+    get:
+      tags: [Read]
+      summary: Get autocomplete suggestions for a prefix
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: The text typed so far (minimum 2 characters).
+          schema: { type: string, example: mark }
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of suggestions to return.
+          schema: { type: integer, default: 10, example: 10 }
+        - name: fuzzy
+          in: query
+          required: false
+          description: Allow small typos / fuzzy matches.
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: Suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query: { type: string, example: mark }
+                  count: { type: integer, example: 4 }
+                  suggestions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        word: { type: string, example: marketing }
+                        source:
+                          type: string
+                          description: "`hot` = served from RAM cache, `cold` = read from disk."
+                          example: cold
+        "400":
+          description: Missing query or shorter than the minimum length.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /upload:
+    post:
+      tags: [Write]
+      summary: Add words from a CSV column (deduplicated)
+      description: >
+        Upload a CSV file and name the column to ingest. `merge` (default)
+        adds the values to the existing corpus, dropping duplicates within
+        the file and against what is already stored. `replace` discards the
+        current corpus and uses only this CSV. Empty cells are skipped. The
+        corpus reloads in-process, so new words are queryable immediately.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, column]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The .csv file.
+                column:
+                  type: string
+                  description: Header name of the column to ingest (case-insensitive).
+                  example: keyword
+                mode:
+                  type: string
+                  enum: [merge, replace]
+                  default: merge
+      responses:
+        "200":
+          description: Uploaded and live
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  mode: { type: string, example: merge }
+                  values_read: { type: integer, example: 8 }
+                  new_version: { type: string, example: v2 }
+                  corpus_words: { type: integer, example: 7 }
+        "400":
+          description: Missing file/column, unknown column, or empty column.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          description: Invalid or missing admin token.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /reload:
+    post:
+      tags: [Write]
+      summary: Rebuild the engine from the corpus on disk
+      description: >
+        Normally unnecessary — `/upload` and `/restore` reload for you. Use
+        this only if you changed the data directory by hand.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Reloaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: reloaded }
+                  corpus_words: { type: integer, example: 7 }
+        "401":
+          description: Invalid or missing admin token.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /backup:
+    get:
+      tags: [Write]
+      summary: Download the entire data directory as a .zip
+      description: The complete backup — all words plus internal state.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: A zip archive.
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Invalid or missing admin token.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /restore:
+    post:
+      tags: [Write]
+      summary: Replace all data from a backup .zip and go live
+      description: >
+        Upload a zip produced by `/backup`. It replaces the current data
+        entirely and brings the restored corpus live. Safe: if the zip is
+        invalid or anything fails, the current data is left untouched.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: A backup .zip from /backup.
+      responses:
+        "200":
+          description: Restored and live
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: restored }
+                  corpus_words: { type: integer, example: 7 }
+        "400":
+          description: Missing file or not a valid backup.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          description: Invalid or missing admin token.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /blacklist:
+    get:
+      tags: [Write]
+      summary: List the current blacklist
+      description: Returns the words that are permanently excluded from the corpus.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: The blacklist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer, example: 2 }
+                  words:
+                    type: array
+                    items: { type: string }
+                    example: ["apple", "banana"]
+        "401":
+          description: Invalid or missing admin token.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    post:
+      tags: [Write]
+      summary: Blacklist words so they never appear in the corpus
+      description: >
+        Adds words to a persistent blacklist. Blacklisted words are filtered
+        out of every future `/upload`, so they can never be re-added. With
+        `reload=true` (default) the live corpus is also rebuilt right now
+        without any blacklisted word (a new version) and swapped in. With
+        `reload=false` the words are only recorded and take effect on the next
+        upload or the next `reload=true` call.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: reload
+          in: query
+          required: false
+          description: Rebuild the live corpus immediately without the blacklisted words.
+          schema: { type: boolean, default: true }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [words]
+              properties:
+                words:
+                  type: array
+                  items: { type: string }
+                  example: ["apple", "banana"]
+      responses:
+        "200":
+          description: Blacklist updated (and corpus rebuilt if reload=true)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  added: { type: integer, example: 2 }
+                  blacklist_total: { type: integer, example: 2 }
+                  reloaded: { type: boolean, example: true }
+                  removed_from_corpus: { type: integer, example: 2 }
+                  new_version: { type: string, example: v3 }
+                  corpus_words: { type: integer, example: 5 }
+        "400":
+          description: Missing or empty 'words' array.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          description: Invalid or missing admin token.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: >
+        Admin token (the ADMIN_TOKEN the server was started with). Only
+        needed for write endpoints, and only if a token was configured.
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: "column \"keyword\" not found in CSV; available columns: id, name" }
