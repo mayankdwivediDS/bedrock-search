@@ -1,0 +1,15 @@
+{
+  "theme": "dark",
+  "themeVariables": {
+    "background": "#050b09",
+    "primaryColor": "#07140f",
+    "primaryTextColor": "#d1fae5",
+    "primaryBorderColor": "#34d399",
+    "lineColor": "#6ee7b7",
+    "secondaryColor": "#0b1220",
+    "tertiaryColor": "#062a35",
+    "edgeLabelBackground": "#07140f",
+    "fontFamily": "Consolas, Menlo, Monaco, monospace"
+  },
+  "flowchart": { "htmlLabels": true, "curve": "basis", "nodeSpacing": 42, "rankSpacing": 54 }
+}

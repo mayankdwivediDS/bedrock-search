@@ -1,0 +1,18 @@
+flowchart TB
+  Browser["Browser console<br/>projects / CSV / metrics / API docs"] --> API["Go / Fiber API<br/>auth / routes / Swagger"]
+  Client["Application clients<br/>suggest / health / metrics"] --> API
+  API --> Manager["Project manager<br/>default / catalog / isolated"]
+  Manager --> Instance["Search instance<br/>engine / ledger / worker"]
+  CSV["CSV file set"] -->|"version + atomic reload"| Cold["Cold corpus<br/>versioned disk index"]
+  Instance -->|"cache hit"| Hot["Hot cache<br/>RAM prefix tries"]
+  Instance -->|"cache miss"| Cold
+  Cold -->|"popular prefix"| Hot
+
+  classDef terminal fill:#07140f,stroke:#34d399,color:#d1fae5,stroke-width:2px;
+  classDef api fill:#0b1220,stroke:#60a5fa,color:#dbeafe,stroke-width:2px;
+  classDef hot fill:#231235,stroke:#e879f9,color:#f5d0fe,stroke-width:2px;
+  classDef cold fill:#062a35,stroke:#22d3ee,color:#cffafe,stroke-width:2px;
+  class Browser,Client,Manager,Instance,CSV terminal;
+  class API api;
+  class Hot hot;
+  class Cold cold;
