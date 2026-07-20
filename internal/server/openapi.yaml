@@ -3,7 +3,7 @@ info:
   title: go-suggest-neo API
   version: "1.0"
   description: >
-    A fast autocomplete service. There are six endpoints: two public reads
+    A fast autocomplete service and multi-project operations console. There are public reads,
     (`/health`, `/suggest`) and four data-management writes (`/upload`,
     `/reload`, `/backup`, `/restore`).
 
@@ -22,6 +22,8 @@ tags:
     description: Public. No token required.
   - name: Write
     description: Data management. Requires the admin token only if ADMIN_TOKEN is set.
+  - name: Projects
+    description: Isolated project management for the operations console. Requires the admin token.
 
 paths:
   /health:
@@ -387,7 +389,88 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
 
+  /api/projects:
+    get:
+      tags: [Projects]
+      summary: List isolated local projects
+      security: [{ ApiKeyAuth: [] }]
+      responses:
+        "200":
+          description: Project names and the local node identifier.
+    post:
+      tags: [Projects]
+      summary: Create an isolated project
+      security: [{ ApiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, example: catalog }
+      responses:
+        "201": { description: Project created }
+
+  /api/projects/{name}/overview:
+    get:
+      tags: [Projects]
+      summary: Project corpus, cache, source-file, and prefix overview
+      security: [{ ApiKeyAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ProjectName"
+      responses:
+        "200": { description: Live project overview }
+
+  /api/projects/{name}/upload:
+    post:
+      tags: [Projects]
+      summary: Import a CSV file into one project
+      security: [{ ApiKeyAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ProjectName"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, column]
+              properties:
+                file: { type: string, format: binary }
+                column: { type: string, example: keyword }
+                mode: { type: string, enum: [merge, replace], default: merge }
+      responses:
+        "200": { description: Imported and atomically reloaded }
+
+  /api/projects/{name}/reload:
+    post:
+      tags: [Projects]
+      summary: Reload a project's current corpus version
+      security: [{ ApiKeyAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ProjectName"
+      responses:
+        "200": { description: Project reloaded }
+
+  /api/projects/{name}:
+    delete:
+      tags: [Projects]
+      summary: Delete a non-default project and its isolated data
+      security: [{ ApiKeyAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ProjectName"
+      responses:
+        "204": { description: Project deleted }
+
 components:
+  parameters:
+    ProjectName:
+      name: name
+      in: path
+      required: true
+      schema: { type: string, example: catalog }
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

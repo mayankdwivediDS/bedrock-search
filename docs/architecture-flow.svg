@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Bedrock Search request and management flow</title>
+  <desc id="desc">Browser console and API clients reach the Go API, which routes isolated projects to their own instances. Each instance reads a hot cache before scanning the cold disk corpus, while the ledger promotes popular prefixes.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#081026"/><stop offset="1" stop-color="#182a59"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity=".28"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6L0 12Z" fill="#91a9f8"/></marker>
+    <style>text{font-family:Arial,sans-serif;fill:#edf2ff}.title{font-size:31px;font-weight:700}.sub{font-size:16px;fill:#afbee7}.box{stroke:#526fae;stroke-width:2;filter:url(#shadow)}.label{font-size:19px;font-weight:700}.body{font-size:14px;fill:#b8c9f0}.arrow{stroke:#91a9f8;stroke-width:3;fill:none;marker-end:url(#arrow)}.tiny{font-size:13px;fill:#9db0df}.pill{font-size:12px;font-weight:700;letter-spacing:1px}</style>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <text x="62" y="66" class="title">Bedrock Search — operations and query flow</text>
+  <text x="62" y="94" class="sub">Each project is isolated, while the adaptive cache keeps popular prefixes in memory.</text>
+  <g class="box"><rect x="64" y="180" width="210" height="152" rx="16" fill="#172a54"/><text x="90" y="224" class="label">Browser console</text><text x="90" y="253" class="body">Projects · CSV files</text><text x="90" y="276" class="body">Metrics · API docs</text><text x="90" y="299" class="body">Hot / cold explorer</text></g>
+  <g class="box"><rect x="64" y="438" width="210" height="110" rx="16" fill="#172a54"/><text x="90" y="480" class="label">API clients</text><text x="90" y="509" class="body">Suggest · health · metrics</text></g>
+  <g class="box"><rect x="382" y="250" width="230" height="170" rx="16" fill="#263d83"/><text x="410" y="293" class="label">Go / Fiber API</text><text x="410" y="322" class="body">Admin auth + routes</text><text x="410" y="346" class="body">Console &amp; Swagger</text><text x="410" y="370" class="body">Project API</text></g>
+  <g class="box"><rect x="724" y="142" width="230" height="150" rx="16" fill="#244b61"/><text x="752" y="185" class="label">Project manager</text><text x="752" y="214" class="body">default · catalog · …</text><text x="752" y="238" class="body">One instance per project</text><rect x="752" y="253" width="94" height="22" rx="11" fill="#267c68"/><text x="766" y="269" class="pill">ISOLATED</text></g>
+  <g class="box"><rect x="724" y="394" width="230" height="150" rx="16" fill="#41345f"/><text x="752" y="437" class="label">Search instance</text><text x="752" y="466" class="body">Engine · ledger · worker</text><text x="752" y="490" class="body">Versioned corpus lifecycle</text><rect x="752" y="505" width="104" height="22" rx="11" fill="#71579f"/><text x="765" y="521" class="pill">PER PROJECT</text></g>
+  <g class="box"><rect x="1058" y="118" width="166" height="126" rx="16" fill="#583b78"/><text x="1083" y="160" class="label">Hot cache</text><text x="1083" y="189" class="body">Trie prefixes</text><text x="1083" y="212" class="body">RAM · LRU</text></g>
+  <g class="box"><rect x="1058" y="400" width="166" height="126" rx="16" fill="#24516a"/><text x="1083" y="442" class="label">Cold corpus</text><text x="1083" y="471" class="body">Sorted disk index</text><text x="1083" y="494" class="body">Versions on disk</text></g>
+  <path d="M274 256H364" class="arrow"/><path d="M274 492H364" class="arrow"/><path d="M612 320H704V217H724" class="arrow"/><path d="M839 292V374" class="arrow"/><path d="M954 469H1028V181H1058" class="arrow"/><path d="M954 469H1058" class="arrow"/>
+  <path d="M1141 244V337H954V394" class="arrow"/><text x="977" y="322" class="tiny">miss or stale prefix</text>
+  <path d="M1058 526V594H839V544" class="arrow"/><text x="878" y="585" class="tiny">popular prefixes promote asynchronously</text>
+  <text x="64" y="657" class="sub">CSV upload → versioned corpus → atomic reload → suggestions served hot when promoted, cold otherwise.</text>
+</svg>
