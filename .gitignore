@@ -30,6 +30,7 @@ coverage.html
 *.coverprofile
 *.test
 *.prof
+.gocache/
 
 # Archives and OS/editor files
 *.zip
@@ -45,3 +46,9 @@ video_for_submission.md
 video_for_submission.mp4
 video_for_submission.srt
 demo-data/
+
+# Local visual-render verification and discarded concept drafts
+docs/workflow-viewer-preview*.png
+docs/architecture-flow-preview*.png
+docs/visuals/bedrock-search-cover.png
+docs/visuals/hot-cold-concept.png

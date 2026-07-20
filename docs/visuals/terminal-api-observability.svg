@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Bedrock Search API and observability flow</title>
+  <desc id="desc">Terminal-themed diagram of browser requests flowing through the Go API to projects, search data and operational endpoints.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07101b"/><stop offset="1" stop-color="#02060c"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .mono{font-family:Consolas,Menlo,Monaco,monospace}.muted{fill:#7890a7}.green{fill:#7bf1a8}.cyan{fill:#63ddff}.pink{fill:#fa84ce}.amber{fill:#ffca73}.white{fill:#e7f2fb}.line{stroke:#203850;stroke-width:1}.panel{fill:#0a1725;stroke:#284760;stroke-width:1.5}.chip{fill:#0c2231;stroke:#2a5b70;stroke-width:1}.arrow{fill:none;stroke:#63ddff;stroke-width:3;marker-end:url(#arr)}
+    </style>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#63ddff"/></marker>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect x="50" y="42" width="1820" height="996" rx="18" fill="#060e18" stroke="#29445e" stroke-width="2"/>
+  <rect x="50" y="42" width="1820" height="64" rx="18" fill="#0d1b2a"/>
+  <circle cx="88" cy="74" r="9" fill="#ff6f91"/><circle cx="116" cy="74" r="9" fill="#ffca73"/><circle cx="144" cy="74" r="9" fill="#7bf1a8"/>
+  <text x="178" y="81" class="mono muted" font-size="22">bedrock@ops:~$ curl /metrics/json</text>
+
+  <text x="108" y="180" class="mono green" font-size="23"># OPERATE, OBSERVE, AND INTEGRATE</text>
+  <text x="108" y="240" class="mono white" font-size="51" font-weight="700">One API surface. Clear runtime signals.</text>
+  <text x="108" y="282" class="mono muted" font-size="22">Interactive console, documented endpoints, and container-ready delivery.</text>
+
+  <g transform="translate(118 390)">
+    <rect class="panel" width="286" height="292" rx="12"/>
+    <text x="28" y="50" class="mono cyan" font-size="21">REQUEST SOURCES</text>
+    <text x="28" y="105" class="mono white" font-size="28">Browser console</text>
+    <text x="28" y="146" class="mono muted" font-size="18">projects · CSV · metrics</text>
+    <rect x="28" y="184" width="226" height="48" rx="8" class="chip"/>
+    <text x="46" y="215" class="mono green" font-size="18">GET /suggest</text>
+    <text x="28" y="268" class="mono amber" font-size="17">Application clients</text>
+  </g>
+  <g transform="translate(572 340)">
+    <rect width="448" height="390" rx="14" class="panel" stroke="#63ddff" stroke-width="2"/>
+    <text x="32" y="55" class="mono cyan" font-size="22">GO / FIBER API</text>
+    <text x="32" y="105" class="mono white" font-size="34" font-weight="700">Search control plane</text>
+    <line x1="32" y1="135" x2="416" y2="135" class="line"/>
+    <text x="32" y="183" class="mono green" font-size="20">✓ Token middleware</text>
+    <text x="32" y="225" class="mono green" font-size="20">✓ Project isolation</text>
+    <text x="32" y="267" class="mono green" font-size="20">✓ Atomic CSV reload</text>
+    <text x="32" y="309" class="mono green" font-size="20">✓ Cache / cold-index routing</text>
+    <rect x="32" y="333" width="384" height="34" rx="6" fill="#071d2a"/>
+    <text x="48" y="357" class="mono muted" font-size="15">:3000  •  /docs  •  /openapi.yaml</text>
+  </g>
+  <path d="M404 536 C462 536 498 536 572 536" class="arrow" filter="url(#glow)"/>
+  <text x="446" y="510" class="mono cyan" font-size="16">HTTP</text>
+  <path d="M1020 536 C1080 536 1120 536 1192 536" class="arrow" filter="url(#glow)"/>
+
+  <g transform="translate(1192 314)">
+    <rect width="572" height="448" rx="14" class="panel"/>
+    <text x="32" y="55" class="mono pink" font-size="22">RUNTIME VIEWS</text>
+    <g transform="translate(30 88)">
+      <rect width="244" height="128" rx="10" class="chip"/>
+      <text x="18" y="35" class="mono cyan" font-size="18">/health</text><text x="18" y="70" class="mono white" font-size="23">service ready</text><text x="18" y="104" class="mono green" font-size="17">HTTP 200</text>
+    </g>
+    <g transform="translate(298 88)">
+      <rect width="244" height="128" rx="10" class="chip"/>
+      <text x="18" y="35" class="mono cyan" font-size="18">/metrics/json</text><text x="18" y="70" class="mono white" font-size="23">cache + disk</text><text x="18" y="104" class="mono amber" font-size="17">prefix activity</text>
+    </g>
+    <g transform="translate(30 242)">
+      <rect width="244" height="128" rx="10" class="chip"/>
+      <text x="18" y="35" class="mono cyan" font-size="18">/projects</text><text x="18" y="70" class="mono white" font-size="23">isolated sets</text><text x="18" y="104" class="mono pink" font-size="17">create · reload</text>
+    </g>
+    <g transform="translate(298 242)">
+      <rect width="244" height="128" rx="10" class="chip"/>
+      <text x="18" y="35" class="mono cyan" font-size="18">/docs</text><text x="18" y="70" class="mono white" font-size="23">Swagger UI</text><text x="18" y="104" class="mono green" font-size="17">OpenAPI contract</text>
+    </g>
+  </g>
+
+  <g transform="translate(118 790)">
+    <rect width="1646" height="168" rx="12" fill="#081523" stroke="#223e59"/>
+    <text x="30" y="48" class="mono green" font-size="19">$ docker compose up --build</text>
+    <line x1="30" y1="70" x2="1616" y2="70" class="line"/>
+    <text x="30" y="112" class="mono cyan" font-size="21">container</text><text x="155" y="112" class="mono muted" font-size="19">go-suggest-neo :3000</text>
+    <text x="594" y="112" class="mono cyan" font-size="21">mounted data</text><text x="779" y="112" class="mono muted" font-size="19">corpora / indexes / reload files</text>
+    <text x="1277" y="112" class="mono cyan" font-size="21">contract</text><text x="1412" y="112" class="mono muted" font-size="19">Swagger + OpenAPI</text>
+    <text x="30" y="145" class="mono green" font-size="16">→ reproducible demo environment with an inspectable operational surface</text>
+  </g>
+</svg>
