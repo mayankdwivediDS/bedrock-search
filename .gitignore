@@ -1,0 +1,40 @@
+# for us in the local system only dont push this
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*credentials*.txt
+*creds*.txt
+*.pem
+*.key
+
+# Build output and generated binaries
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Runtime state, uploads, and logs
+data/
+!data/.gitkeep
+logs/
+*.log
+*.log.*
+genapi_uploads/
+
+# Test and coverage artifacts
+coverage.out
+coverage.html
+*.coverprofile
+*.test
+*.prof
+
+# Archives and OS/editor files
+*.zip
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
