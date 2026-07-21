@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bedrock Search — Caption renderer</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 14px/1.4 Arial, sans-serif; color: #141414; background: #fafafa; }
+    main { max-width: 1360px; margin: 0 auto; padding: 28px; display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 28px; }
+    h1 { font-size: 20px; margin: 0 0 4px; } p { color: #626262; margin: 0 0 18px; }
+    .preview { background: #111; width: 100%; aspect-ratio: 16 / 9; position: relative; overflow: hidden; }
+    #video { position: absolute; object-fit: contain; transform-origin: top left; }
+    #caption { position: absolute; display: grid; place-items: center; color: white; font-weight: 700; text-align: center; background: rgba(0,0,0,.68); border-radius: 10px; padding: 0 24px; white-space: nowrap; overflow: hidden; }
+    aside { border: 1px solid #ddd; background: white; padding: 18px; } label { display: grid; grid-template-columns: 1fr 58px; gap: 8px; margin: 12px 0 2px; font-weight: 700; } input[type=range] { width: 100%; accent-color: #6d38d6; } output { text-align: right; color: #6d38d6; }
+    button { width: 100%; border: 0; padding: 12px; margin-top: 20px; background: #171717; color: white; font-weight: 700; cursor: pointer; } button:disabled { opacity: .55; }
+    #status { min-height: 40px; margin-top: 12px; color: #555; font-size: 12px; white-space: pre-wrap; }
+    code { background:#f1f1f1; padding:2px 4px; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <h1>Caption layout</h1>
+      <p>Drag sliders to position captions in the outer bottom frame. The preview is visual; Render creates the final MP4.</p>
+      <div class="preview" id="preview">
+        <video id="video" src="/source.mp4" muted loop autoplay controls></video>
+        <div id="caption">Operators see corpus size, cache state, promoted prefixes, and hit rate.</div>
+      </div>
+    </section>
+    <aside id="controls">
+      <label>Side frame <output></output></label><input data-key="frameX" type="range" min="0" max="160" value="60">
+      <label>Bottom frame <output></output></label><input data-key="bottomFrame" type="range" min="55" max="180" value="68">
+      <label>Caption width <output></output></label><input data-key="cardWidth" type="range" min="600" max="1700" value="1240">
+      <label>Caption height <output></output></label><input data-key="cardHeight" type="range" min="40" max="110" value="55">
+      <label>Text size <output></output></label><input data-key="fontSize" type="range" min="16" max="42" value="26">
+      <label>Box opacity <output></output></label><input data-key="cardAlpha" type="range" min="0" max="180" value="82">
+      <label>Corner roundness <output></output></label><input data-key="cornerRadius" type="range" min="0" max="28" value="10">
+      <button id="render">Render MP4</button>
+      <div id="status">Output: <code>exports\bedrock-search-hackathon-pitch-captioned-ui.mp4</code></div>
+    </aside>
+  </main>
+  <script>
+    const canvas = { width: 1920, height: 1080 };
+    const inputs = [...document.querySelectorAll('input')];
+    const video = document.querySelector('#video');
+    const card = document.querySelector('#caption');
+    const read = () => Object.fromEntries(inputs.map(input => [input.dataset.key, +input.value]));
+    const update = () => {
+      const s = read();
+      inputs.forEach(input => input.previousElementSibling.querySelector('output').textContent = input.value);
+      const videoWidth = canvas.width - 2 * s.frameX, videoHeight = canvas.height - s.bottomFrame;
+      video.style.left = `${s.frameX / canvas.width * 100}%`;
+      video.style.top = '0';
+      video.style.width = `${videoWidth / canvas.width * 100}%`;
+      video.style.height = `${videoHeight / canvas.height * 100}%`;
+      const x = (canvas.width - s.cardWidth) / 2;
+      const y = videoHeight + (s.bottomFrame - s.cardHeight) / 2;
+      card.style.left = `${x / canvas.width * 100}%`;
+      card.style.top = `${y / canvas.height * 100}%`;
+      card.style.width = `${s.cardWidth / canvas.width * 100}%`;
+      card.style.height = `${s.cardHeight / canvas.height * 100}%`;
+      card.style.fontSize = `${s.fontSize / canvas.width * 100}vw`;
+      card.style.borderRadius = `${s.cornerRadius / canvas.width * 100}vw`;
+      card.style.background = `rgba(0,0,0,${1 - s.cardAlpha / 255})`;
+    };
+    inputs.forEach(input => input.addEventListener('input', update)); update();
+    document.querySelector('#render').addEventListener('click', async event => {
+      event.currentTarget.disabled = true;
+      document.querySelector('#status').textContent = 'Rendering… this takes about a minute.';
+      try {
+        const response = await fetch('/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(read()) });
+        const result = await response.json();
+        document.querySelector('#status').textContent = result.ok ? `Done: ${result.output}` : `Render failed:\n${result.log}`;
+      } catch (error) { document.querySelector('#status').textContent = `Render failed: ${error.message}`; }
+      event.currentTarget.disabled = false;
+    });
+  </script>
+</body>
+</html>
