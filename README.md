@@ -83,6 +83,32 @@ docker compose up --build
 
 The Compose setup persists service data in a volume. Configure environment values in `.env` or your deployment environment.
 
+### Public deployment for judges
+
+Deploy this repository to any Docker-capable server (a small Linux VM, Render,
+Railway, Fly.io, or an AWS container service). Set the environment values in the
+host's secret/environment-variable settings rather than committing a `.env`
+file:
+
+```text
+ADMIN_TOKEN=<a new random value with at least 32 characters>
+CORS_ORIGINS=https://<your-public-domain>
+SWAGGER_PROTECT=false
+```
+
+On a Linux VM with Docker installed, clone the repository, create the three
+environment variables above in a local `.env` file, and run:
+
+```bash
+docker compose up -d --build
+```
+
+Put the service behind an HTTPS reverse proxy (such as Caddy or Nginx) and share
+`https://<your-public-domain>/console` with judges. Give the admin token only in
+the private Devpost “additional info” field; never put it in the repository or
+on the public project page. The public read-only endpoints include `/health`,
+`/suggest`, `/metrics/json`, and `/docs`.
+
 ## API examples
 
 ```text
@@ -106,6 +132,15 @@ The console supports project creation and deletion, CSV file-set imports, corpus
 - CSV ingestion and versioned corpus lifecycle
 - Prometheus-compatible and JSON metrics
 - Docker for repeatable deployment
+
+## Built with Codex and GPT-5.6
+
+Codex with GPT-5.6 was used as an implementation partner throughout the project:
+to help design the hot/cold search architecture, implement and refine the Go
+service and operations console, add tests and deployment assets, and review the
+developer documentation and hackathon demo materials. The final design,
+integration decisions, testing, and submission are owned and verified by the
+project author.
 
 ## Verification
 

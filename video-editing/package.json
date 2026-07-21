@@ -12,7 +12,8 @@
     "capture:github": "node capture-github.mjs",
     "render:architecture": "node render.mjs segments/05-architecture/index.html 10 exports/05-architecture.mp4",
     "make:caption-card": "node make-caption-card.mjs",
-    "caption:ui": "node caption-ui.mjs"
+    "caption:ui": "node caption-ui.mjs",
+    "voice:segments": "node generate-segment-voice.mjs"
   },
   "dependencies": {
     "playwright": "^1.54.0"

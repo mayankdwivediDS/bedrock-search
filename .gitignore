@@ -53,6 +53,7 @@ video-editing/audio/
 video-editing/captures/
 video-editing/exports/
 video-editing/.playwright/
+video-editing/.env.local
 
 # Local visual-render verification and discarded concept drafts
 docs/workflow-viewer-preview*.png
