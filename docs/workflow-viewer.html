@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Bedrock Search workflow</title>
   <style>
-    :root{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#050b09;color:#d1fae5}*{box-sizing:border-box}body{margin:0;overflow:hidden}.bar{height:58px;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid #164e3b;background:#07140f}.prompt{color:#34d399}.muted{color:#6ee7b7;font-size:.8rem}.tools{margin-left:auto;display:flex;gap:8px}button{border:1px solid #22734f;border-radius:6px;background:#0b2118;color:#bbf7d0;padding:7px 11px;cursor:pointer;font:inherit}button:hover{background:#123c29}.canvas{height:calc(100vh - 58px);position:relative;background-image:linear-gradient(#0d2b1d33 1px,transparent 1px),linear-gradient(90deg,#0d2b1d33 1px,transparent 1px);background-size:32px 32px;overflow:hidden;cursor:grab}.canvas.dragging{cursor:grabbing}.stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(1);transform-origin:center;min-width:720px;padding:28px}.legend{position:absolute;left:18px;bottom:18px;border:1px solid #1a5b40;background:#07140fee;padding:12px;color:#86efac;font-size:.75rem;line-height:1.7}.legend b{color:#f0fdf4}.tip{position:absolute;right:18px;bottom:18px;color:#6ee7b7;font-size:.75rem}.fallback{max-width:720px;margin:auto;padding:30px;border:1px dashed #34d399;color:#bbf7d0;white-space:pre-wrap}svg{width:100%;height:auto;filter:drop-shadow(0 20px 32px #0008)}
+    :root{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#050b09;color:#d1fae5}*{box-sizing:border-box}body{margin:0;overflow:hidden}.bar{height:58px;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid #164e3b;background:#07140f}.prompt{color:#34d399}.muted{color:#6ee7b7;font-size:.8rem}.tools{margin-left:auto;display:flex;gap:8px}button{border:1px solid #22734f;border-radius:6px;background:#0b2118;color:#bbf7d0;padding:7px 11px;cursor:pointer;font:inherit}button:hover{background:#123c29}.canvas{height:calc(100vh - 58px);position:relative;background-image:linear-gradient(#0d2b1d33 1px,transparent 1px),linear-gradient(90deg,#0d2b1d33 1px,transparent 1px);background-size:32px 32px;overflow:hidden;cursor:grab}.canvas.dragging{cursor:grabbing}.stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(1);transform-origin:center;min-width:720px;padding:28px}.legend{position:absolute;left:18px;bottom:18px;border:1px solid #1a5b40;background:#07140fee;padding:12px;color:#86efac;font-size:.75rem;line-height:1.7}.legend b{color:#f0fdf4}.tip{position:absolute;right:18px;bottom:18px;color:#6ee7b7;font-size:.75rem}.fallback{max-width:720px;margin:auto;padding:30px;border:1px dashed #34d399;color:#bbf7d0;white-space:pre-wrap}svg{width:100%;height:auto;filter:drop-shadow(0 20px 32px #0008)}svg .tour-focus rect{stroke:#fbbf24!important;stroke-width:5px!important;filter:drop-shadow(0 0 12px #fbbf24)}
   </style>
 </head>
 <body>
@@ -41,6 +41,35 @@
     canvas.addEventListener('pointermove',e=>{if(!drag)return;x=drag.ox+e.clientX-drag.x;y=drag.oy+e.clientY-drag.y;render()});
     canvas.addEventListener('pointerup',()=>{drag=null;canvas.classList.remove('dragging')});
     document.querySelector('#plus').onclick=()=>zoom(.12);document.querySelector('#minus').onclick=()=>zoom(-.12);document.querySelector('#reset').onclick=()=>{scale=1;x=0;y=0;render()};render();
+
+    // `?tour=1` is a deterministic, hands-free version for video capture.
+    // It spotlights the request path and moves packets along the active arrows.
+    if (new URLSearchParams(location.search).get('tour') === '1') {
+      document.querySelector('.tools').style.visibility='hidden';
+      document.querySelector('.tip').textContent='AUTOMATED PITCH TOUR';
+      const svg=stage.querySelector('svg');
+      const steps=[
+        ['Browser', 1.25, -170, 135], ['API', 1.48, -65, 65],
+        ['Manager', 1.52, -65, -75], ['Instance', 1.45, -65, -235],
+        ['Cold', 1.56, -305, -405], ['Hot', 1.62, -170, -540],
+      ];
+      const node=id=>svg.querySelector(`[id*="-${id}-"]`);
+      const setFocus=([id,nextScale,nextX,nextY])=>{
+        svg.querySelectorAll('.tour-focus').forEach(el=>el.classList.remove('tour-focus'));
+        node(id)?.classList.add('tour-focus');
+        scale=nextScale;x=nextX;y=nextY;stage.style.transition='transform 900ms cubic-bezier(.22,.9,.25,1)';render();
+      };
+      const packet=(from,to)=>{
+        const path=[...svg.querySelectorAll('.flowchart-link')].find(p=>p.id.includes(`_${from}_`) && p.id.includes(`_${to}_`));
+        if(!path)return;
+        const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        dot.setAttribute('r','8');dot.setAttribute('fill','#fbbf24');dot.setAttribute('filter','drop-shadow(0 0 6px #fbbf24)');svg.append(dot);
+        const length=path.getTotalLength(),started=performance.now();
+        const move=now=>{const p=path.getPointAtLength(Math.min(1,(now-started)/1200)*length);dot.setAttribute('cx',p.x);dot.setAttribute('cy',p.y);if(now-started<1200)requestAnimationFrame(move);else dot.remove()};requestAnimationFrame(move);
+      };
+      const links=[['Browser','API'],['API','Manager'],['Manager','Instance'],['Instance','Cold'],['Cold','Hot']];
+      steps.forEach((step,index)=>setTimeout(()=>{setFocus(step);if(index>0)packet(...links[index-1])},900+index*2800));
+    }
   </script>
 </body>
 </html>

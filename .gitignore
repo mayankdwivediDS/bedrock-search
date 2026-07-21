@@ -47,6 +47,9 @@ video_for_submission.mp4
 video_for_submission.srt
 demo-data/
 
+# Local video-production workspace: source scenes, captures, narration, and exports.
+video-editing/
+
 # Local visual-render verification and discarded concept drafts
 docs/workflow-viewer-preview*.png
 docs/architecture-flow-preview*.png

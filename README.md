@@ -1,66 +1,115 @@
 # Bedrock Search
 
-> **The bedrock autocomplete engine — drop it under any search system.**
+> Fast, observable autocomplete with an adaptive hot trie cache and a versioned, disk-backed corpus.
 
-Bedrock Search is a plug-and-play autocomplete engine that grounds any search
-bar in real intent — instantly suggesting relevant keywords from millions of
-entries as users type, so no product has to build search-as-you-type from
-scratch.
+Bedrock Search is a Go service for search-as-you-type. It serves matching terms from an in-memory prefix trie when a prefix is popular, falls back to an indexed sorted corpus on disk when it is not, and promotes repeated demand automatically.
 
-## Planned technology stack
+It includes an operations console, isolated search projects, versioned CSV ingestion, metrics, Prometheus output, an OpenAPI specification, and Swagger UI.
 
-- **Go 1.23** for the high-performance API service.
-- **Fiber** for HTTP routing and middleware.
-- **Disk-backed sorted corpus and adaptive trie cache** for low-latency prefix
-  suggestions at scale.
-- **CSV ingestion** for bringing a product's own searchable terms into the
-  engine.
-- **OpenAI GPT-5.6** for optional, schema-validated suggestion humanization
-  and intent labels, with a deterministic non-AI fallback.
-- **Docker** for repeatable local and cloud deployment.
-- **Go test** for unit and integration coverage.
+## How it works
 
-## Operations console
+1. An application calls `GET /suggest?query=<prefix>`.
+2. The active project's hot prefix tries are checked in RAM.
+3. A hot hit returns immediately from the trie. A cold miss uses the sorted, disk-backed corpus index.
+4. Repeated demand promotes the precise prefix into the bounded hot cache.
+5. Metrics expose latency, hot/cold state, promotion activity, and cache hit rate.
 
-Open `http://localhost:8001/console` to manage the service from one UI. It
-supports isolated projects, project creation and deletion, CSV file-set import
-history, corpus reloads, live hot/cold cache metrics, and a prefix-level view
-of the hot cache and cold promotion candidates. Set `ADMIN_TOKEN` before
-exposing the console beyond a trusted local network.
+The current release is a single-node service. Projects are isolated by corpus, cache, versions, usage data, and source-file history.
 
-Each project has its own `data/<project>/` directory, so its corpus versions,
-cache, blacklist, usage snapshots, and source-file history are isolated.
-Projects are restored automatically when the service restarts.
+## Repository layout
 
-This release is a single-node console. It deliberately does not claim to
-operate remote cluster nodes; the project isolation and management API are the
-foundation for that later addition.
+```text
+cmd/
+  server/       HTTP service entry point
+  bootstrap/    corpus bootstrap utility
+internal/
+  engine/       query path and hot/cold selection
+  cache/        bounded in-memory prefix cache
+  corpus/       versioned sorted corpus and index reader
+  server/       console, API, Swagger, and metrics
+docs/           OpenAPI, architecture, and visual assets
+Dockerfile      container image
+docker-compose.yml
+```
 
-## Build status
+## Quick start (Windows / PowerShell)
 
-This repository is being built for OpenAI Build Week. The delivery plan,
-quality gates, and provenance approach are in [PLAN.md](PLAN.md).
+### 1. Clone and configure
 
-## What we are building
+```powershell
+git clone https://github.com/mayankdwivediDS/bedrock-search.git
+Set-Location bedrock-search
+Copy-Item .env.example .env
+```
 
-Users will enter a partial query and receive fast, relevant completions. A
-humanization layer will optionally group and label those results so the next
-search feels useful rather than mechanical. The first release will also support
-CSV-based corpus management, feedback capture, health checks, and a lightweight
-demo interface.
+Edit `.env` before exposing the service outside a trusted environment. In particular, set a strong `ADMIN_TOKEN`.
 
-## Development
-
-Implementation has not started yet. Once the service is initialized, the
-standard validation command will be:
+### 2. Validate and build
 
 ```powershell
 go test ./...
+go build -o bin\neo-server.exe .\cmd\server
+go build -o bin\neo-bootstrap.exe .\cmd\bootstrap
 ```
 
-## Provenance
+### 3. Prepare a corpus
 
-This is a new product workspace. A prior autocomplete service was reviewed as
-technical reference; any authorized reuse will be identified clearly, while
-the Build Week work and use of Codex/GPT-5.6 will be documented in the final
-submission.
+The server needs a corpus under the configured `DATA_DIR`. Bootstrap one from a JSON array of search terms:
+
+```powershell
+.\bin\neo-bootstrap.exe -source .\keywords.json -data .\data -list default -version v1
+```
+
+### 4. Run the service
+
+```powershell
+.\bin\neo-server.exe
+```
+
+Open these local URLs:
+
+- Console: `http://localhost:8001/console`
+- Swagger UI: `http://localhost:8001/docs`
+- OpenAPI: `http://localhost:8001/openapi.yaml`
+- Health: `http://localhost:8001/health`
+
+## Docker deployment
+
+With Docker Desktop running:
+
+```powershell
+docker compose up --build
+```
+
+The Compose setup persists service data in a volume. Configure environment values in `.env` or your deployment environment.
+
+## API examples
+
+```text
+GET /suggest?query=app
+GET /suggest?query=appliaction&fuzzy=true
+GET /metrics/json
+GET /health
+```
+
+Suggestions identify their source as `hot` or `cold`, making cache behaviour visible during integration and operations.
+
+## Operations console
+
+The console supports project creation and deletion, CSV file-set imports, corpus reloads, hot/cold prefix inspection, cache metrics, and API documentation. Each project has its own data directory and lifecycle.
+
+## Technology
+
+- Go and Fiber for the service API
+- Adaptive in-memory prefix tries for hot paths
+- Disk-backed sorted corpus with a skip index for cold paths
+- CSV ingestion and versioned corpus lifecycle
+- Prometheus-compatible and JSON metrics
+- Docker for repeatable deployment
+
+## Verification
+
+```powershell
+go test ./...
+go build ./...
+```
