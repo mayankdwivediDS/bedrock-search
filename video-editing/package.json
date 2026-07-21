@@ -1,0 +1,20 @@
+{
+  "name": "bedrock-search-video-editing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render:problem": "node render.mjs segments/01-problem/index.html 30 exports/01-problem.mp4",
+    "render:console": "node render.mjs segments/02-console-overview/index.html 30 exports/02-console-overview.mp4",
+    "render:api": "node render.mjs segments/03-api-performance/index.html 30 exports/03-api-performance.mp4",
+    "render:hits": "node render.mjs segments/04-realtime-hits/index.html 30 exports/04-realtime-hits.mp4",
+    "render:routing": "node render.mjs segments/05-hot-cold-routing/index.html 30 exports/05-hot-cold-routing.mp4",
+    "render:setup": "node render.mjs segments/06-install-and-swagger/index.html 30 exports/06-install-and-swagger.mp4",
+    "capture:github": "node capture-github.mjs",
+    "render:architecture": "node render.mjs segments/05-architecture/index.html 10 exports/05-architecture.mp4",
+    "make:caption-card": "node make-caption-card.mjs",
+    "caption:ui": "node caption-ui.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.54.0"
+  }
+}

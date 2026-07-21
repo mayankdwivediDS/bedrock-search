@@ -47,8 +47,12 @@ video_for_submission.mp4
 video_for_submission.srt
 demo-data/
 
-# Local video-production workspace: source scenes, captures, narration, and exports.
-video-editing/
+# Video-production sources are versioned; local media, dependencies, and exports are not.
+video-editing/node_modules/
+video-editing/audio/
+video-editing/captures/
+video-editing/exports/
+video-editing/.playwright/
 
 # Local visual-render verification and discarded concept drafts
 docs/workflow-viewer-preview*.png
